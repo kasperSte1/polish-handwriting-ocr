@@ -1,0 +1,14 @@
+venv/
+env/
+.conda/
+
+__pycache__/
+*.pyc
+.idea/
+
+dataset/*
+
+models/
+*.h5
+*.keras
+*.pb
