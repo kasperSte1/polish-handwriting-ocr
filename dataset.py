@@ -2,6 +2,7 @@ import json
 import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
 
 
 def load_dataset(dataset_folder):
@@ -46,11 +47,43 @@ def show_samples(signs, labels, dictionary, n=12, seed=42):
     plt.show()
 
 
-def main():
+def prepare_images(signs):
+    signs_normalized = np.expand_dims(signs, axis=-1)
+    return signs_normalized
+
+
+def split_data(signs, labels, test_size=0.15, val_size=0.15, seed=42):
+    prepared_data = prepare_images(signs)
+    X_temp, X_test, y_temp, y_test = train_test_split(prepared_data,
+                                                      labels,
+                                                      test_size=test_size,
+                                                      random_state=seed,
+                                                      stratify=labels
+                                                      )
+    # second split runs on the remainder, ratio needs rescaling
+    val_size_of_remainder = val_size / (1 - test_size)
+
+    X_train, X_val, y_train, y_val = train_test_split(X_temp,
+                                                      y_temp,
+                                                      test_size=val_size_of_remainder,
+                                                      random_state=seed,
+                                                      stratify=y_temp
+                                                      )
+    return X_train, X_val, X_test, y_train, y_val, y_test
+
+
+def main(plot=False):
     dataset_folder = "dataset/phcd/ocr_files"
     signs, labels, dictionary = load_dataset(dataset_folder)
-    show_samples(signs=signs, labels=labels, dictionary=dictionary)
+
     describe_dataset(signs=signs, labels=labels, dictionary=dictionary)
+    if plot:
+        show_samples(signs=signs, labels=labels, dictionary=dictionary)
+
+    X_train, X_val, X_test, y_train, y_val, y_test = split_data(signs, labels)
+    for name, arr in [("X_train", X_train), ("X_val", X_val), ("X_test", X_test),
+                      ("y_train", y_train), ("y_val", y_val), ("y_test", y_test)]:
+        print(f"{name} shape: {arr.shape}")
 
 
 if __name__ == "__main__":
