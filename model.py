@@ -9,12 +9,18 @@ def build_model(num_classes, input_shape=(32, 32, 1)):
         MaxPooling2D(pool_size=(2, 2)),
         Conv2D(64, (3, 3), activation="relu", padding="same"),
         MaxPooling2D(pool_size=(2, 2)),
+        Conv2D(128, (3, 3), activation="relu", padding="same"),
+        MaxPooling2D(pool_size=(2, 2)),
         Flatten(),
-        Dense(128, activation="relu"),
+        Dense(256, activation="relu"),
         Dropout(0.5),
         Dense(num_classes, activation="softmax")
     ])
-    model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+
+    model.compile(optimizer="adam",
+                  loss="sparse_categorical_crossentropy",
+                  metrics=[tf.keras.metrics.SparseCategoricalAccuracy(name="accuracy")]
+                  )
 
     return model
 
@@ -22,7 +28,6 @@ def build_model(num_classes, input_shape=(32, 32, 1)):
 def main():
     model = build_model(num_classes=89)
     model.summary()
-    model.fit()
 
 
 if __name__ == "__main__":
