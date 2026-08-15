@@ -70,8 +70,6 @@ def main():
     for i, label in enumerate(y_test):
         by_class[label].append(i)
 
-    rng = np.random.default_rng(SEED)
-
     model = load_model(MODEL_PATH)
 
     words = load_word_list(WORDS_PATH)
@@ -83,7 +81,10 @@ def main():
     results = []
     for length, words_of_length in sorted(groups.items()):
 
+        # own rng stream per length, so a single row can be recomputed in isolation
+        rng = np.random.default_rng(SEED + length)
         n = min(SAMPLES_PER_LENGTH, len(words_of_length))
+
         sample = rng.choice(words_of_length, size=n, replace=False)
 
         ok_argmax = 0

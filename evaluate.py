@@ -17,7 +17,7 @@ MODEL_PATH = "models/best_model.h5"
 def top_confusions(y_true, y_pred, dictionary, n=15):
     """Print the n most frequent misclassifications, correct ones excluded."""
 
-    cm_counts = confusion_matrix(y_true, y_pred)
+    cm_counts = confusion_matrix(y_true, y_pred, labels=np.arange(len(dictionary)))
 
     np.fill_diagonal(cm_counts, 0)
     cm_counts_flatten = cm_counts.flatten()
