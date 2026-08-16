@@ -7,9 +7,10 @@ Word images are composed of real PHCD glyphs: for each letter of a target word,
 one random sample of that class is drawn from the test split, so the model has
 never seen any of them. Each word is then read two ways:
 
-  - argmax:     highest-probability class at each position, independently
-  - dictionary: the most likely dictionary word of the same length, scored under
-                the model's per-character probability distributions
+  - argmax:       highest-probability class at each position, independently
+  - argmax_lower: the same reading, lowercased to match the word list
+  - dictionary:   the most likely dictionary word of the same length, scored
+                  under the model's per-character probability distributions
 """
 
 from collections import defaultdict
@@ -17,7 +18,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from wordmatch import load_word_list, group_by_length, encode_groups, match_word
 
-from dataset import load_dataset, split_data, add_channel_dim, build_char_to_code
+from dataset import load_dataset, split_data, add_channel_dim, build_char_to_code, build_canonical_map
 from tensorflow.keras.models import load_model
 
 SAMPLES_PER_LENGTH = 1000
@@ -45,14 +46,15 @@ def compose_word(word, by_class, X_test, y_test, char_to_code, rng):
 
 
 def plot_accuracy_by_length(results, path):
-    """Plot argmax vs dictionary word accuracy against word length."""
+    """Plot argmax, argmax lowercased and dictionary word accuracy against word length."""
 
     results = np.array(results)
     results = results[results[:, 0].argsort()]
 
     fig, ax = plt.subplots(1, 1, figsize=(7, 4))
     ax.plot(results[:, 0], results[:, 1], marker="o", label="argmax")
-    ax.plot(results[:, 0], results[:, 2], marker="o", label="dictionary")
+    ax.plot(results[:, 0], results[:, 2], marker="o", label="argmax (lowercased)")
+    ax.plot(results[:, 0], results[:, 3], marker="o", label="dictionary")
     ax.set_ylim(0, 1)
     ax.set_xlabel("word length")
     ax.set_ylabel("word accuracy")
@@ -60,6 +62,17 @@ def plot_accuracy_by_length(results, path):
     ax.grid(True)
     fig.savefig(path, dpi=150, bbox_inches="tight")
     plt.show()
+
+def merge_case(probs, canonical_arr):
+    """Sum each uppercase class into its lowercase counterpart."""
+
+    merged = np.zeros_like(probs)
+    for c in range(probs.shape[1]):
+        merged[:, canonical_arr[c]] += probs[:, c]
+
+    assert np.allclose(merged.sum(axis=1), 1)
+
+    return merged
 
 
 def main():
@@ -75,9 +88,11 @@ def main():
     words = load_word_list(WORDS_PATH)
     groups = group_by_length(words)
     char_to_code = build_char_to_code(dictionary)
+    canonical_arr = build_canonical_map(dictionary)
     encoded = encode_groups(groups, char_to_code)
 
-    print(f"{'len':>3} {'argmax':>8} {'dict':>8}")
+
+    print(f"{'len':>3} {'argmax':>8} {'argmax_lower':12} {'dict':>8}")
     results = []
     for length, words_of_length in sorted(groups.items()):
 
@@ -90,6 +105,7 @@ def main():
         ok_argmax = 0
         ok_dict = 0
         showed = 0
+        ok_argmax_lower = 0
 
         for word in sample:
             # compose the word image and run the model
@@ -107,16 +123,18 @@ def main():
 
             if reading_argmax == word:
                 ok_argmax += 1
+            if reading_argmax.lower() == word:
+                ok_argmax_lower += 1
             if reading_dict == word:
                 ok_dict += 1
 
             if reading_argmax != word and showed < 5:
                 print(f"{word:12} argmax: {reading_argmax:12} dict: {reading_dict}")
                 showed += 1
-        results.append((length, ok_argmax / len(sample), ok_dict / len(sample)))
+        results.append((length, ok_argmax / len(sample), ok_argmax_lower / len(sample), ok_dict / len(sample)))
 
-    for length, acc_argmax, acc_dict in results:
-        print(f"{length:>3} {acc_argmax:8.3f} {acc_dict:8.3f}")
+    for length, acc_argmax, acc_argmax_lower, acc_dict in results:
+        print(f"{length:>3} {acc_argmax:8.3f} {acc_argmax_lower:8.3f} {acc_dict:8.3f}")
 
     plot_accuracy_by_length(results, FIGURE_PATH)
 
