@@ -38,6 +38,21 @@ def build_char_to_code(dictionary):
 
     return {char: code for code, char in dictionary.items()}
 
+def build_canonical_map(dictionary):
+    """Map every class code to its lowercase counterpart.
+
+    Digits and punctuation map to themselves. Returns ndarray of shape
+    (n_classes,), so canonical_arr[code] gives the merged code.
+    """
+
+    char_to_code = build_char_to_code(dictionary)
+
+    canonical = {}
+    for char, code in char_to_code.items():
+        canonical[code] = char_to_code[char.lower()]
+
+    return np.array([canonical[code] for code in range(len(dictionary))])
+
 
 def describe_dataset(signs, labels, dictionary):
     print("Signs shape: ", signs.shape, "\n Labels shape: ", labels.shape,

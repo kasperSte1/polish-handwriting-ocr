@@ -7,7 +7,7 @@ normalises every glyph to a fixed height.
 
 import numpy as np
 from tensorflow.keras.models import load_model
-from dataset import load_dataset, split_data, build_char_to_code, add_channel_dim
+from dataset import load_dataset, split_data, build_char_to_code, add_channel_dim, build_canonical_map
 from sklearn.metrics import confusion_matrix
 
 DATASET_DIR = "dataset/phcd/ocr_files"
@@ -35,19 +35,12 @@ def case_insensitive_accuracy(y_true, y_pred, dictionary):
     so confusions can be recomputed on them.
     """
 
-    char_to_code = build_char_to_code(dictionary)
-    canonical = {}
-    for code, char in dictionary.items():
-        lower_char = char.lower()
-        canonical[code] = char_to_code.get(lower_char, code)
-
-    canonical_arr = np.array([canonical[c] for c in range(len(dictionary))])
+    canonical_arr = build_canonical_map(dictionary)
 
     y_true_ci = canonical_arr[y_true]
     y_pred_ci = canonical_arr[y_pred]
 
     accuracy = (y_true_ci == y_pred_ci).mean()
-
     print(f"Accuracy (case-insensitive) = {accuracy}")
 
     return accuracy, y_true_ci, y_pred_ci
