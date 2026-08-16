@@ -23,7 +23,8 @@ def group_by_length(words):
     """Group words by length. {length: [words]}"""
 
     groups = defaultdict(list)
-    for w in words:
+    # sorted because set iteration order varies between runs (Python hashes strings per process)
+    for w in sorted(words):
         groups[len(w)].append(w)
     return groups
 
