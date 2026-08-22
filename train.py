@@ -13,9 +13,10 @@ import matplotlib.pyplot as plt
 EPOCHS = 50
 BATCH_SIZE = 256
 SEED = 42
+USE_AUGMENTATION = True
 
 DATASET_DIR = "dataset/phcd/ocr_files"
-FINAL_MODEL_PATH = "models/CNN_augmentation.h5"
+FINAL_MODEL_PATH = "models/CNN.h5"
 CHECKPOINT_PATH = "models/best_model.h5"
 FIGURE_PATH = "figures/training_history.png"
 
@@ -50,7 +51,8 @@ def main():
 
     signs, labels, dictionary = load_dataset(DATASET_DIR)
     X_train, X_val, _, y_train, y_val, _ = split_data(signs, labels)
-    X_train, y_train = augment_images(X_train, y_train)
+    if USE_AUGMENTATION:
+        X_train, y_train = augment_images(X_train, y_train)
     X_train, X_val = add_channel_dim(X_train, X_val)
 
     model = build_model(num_classes=len(dictionary))
